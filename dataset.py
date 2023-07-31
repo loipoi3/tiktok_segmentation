@@ -1,8 +1,6 @@
 from torch.utils.data import Dataset
 import os
 import cv2
-import albumentations as A
-from albumentations.pytorch import ToTensorV2
 import torch
 import numpy as np
 
@@ -33,39 +31,7 @@ class TikTokDataset(Dataset):
             image = augmentations['image'].permute(1, 2, 0)
             mask = augmentations['mask']
 
-        return torch.tensor(image), torch.tensor(mask)
+        # Add an extra dimension to the mask tensor to make it (1, height, width)
+        mask = mask.unsqueeze(0)
 
-
-import matplotlib.pyplot as plt
-
-TRANSFORM_TRAIN = A.Compose([A.HorizontalFlip(p=0.5),
-                             A.Rotate(limit=90, border_mode=cv2.BORDER_CONSTANT, p=0.5),
-                             A.RandomBrightnessContrast(p=0.5),
-                             A.GaussianBlur(p=0.5),
-                             A.RandomGamma(gamma_limit=(80, 120), p=0.5),
-                             A.ChannelShuffle(p=0.5),
-                             ,
-                             ToTensorV2()])
-a = TikTokDataset(root_dir='./data/train', transform=TRANSFORM_TRAIN)
-
-# Get a sample from the dataset
-sample_idx = 0
-image, mask = a[sample_idx]
-
-# Convert the mask to binary
-mask = (mask > 0.5).to(torch.uint8) * 255
-
-# Convert image back to PyTorch tensor
-image = torch.tensor(image)
-
-# Plot the image and mask
-fig, axes = plt.subplots(1, 2, figsize=(10, 5))
-axes[0].imshow(image)  # Transpose image from (C, H, W) to (H, W, C)
-axes[0].set_title("Image")
-axes[0].axis("off")
-
-axes[1].imshow(mask, cmap='gray')
-axes[1].set_title("Mask")
-axes[1].axis("off")
-
-plt.show()
+        return torch.tensor(image).permute(2, 0, 1), torch.tensor(mask)

@@ -3,44 +3,9 @@ import os
 import segmentation_models_pytorch as smp
 import torch
 from segmentation_models_pytorch.losses import SoftBCEWithLogitsLoss
-from config import (TRANSFORM_TRAIN,
-                    TRANSFORM_VAL_TEST,
-                    DEVICE,
-                    SAVED_MODEL_PATH,
-                    CSV_FILE,
-                    ROOT_DIR_TRAIN,
-                    BATCH_SIZE,
-                    LOAD_MODEL,
-                    PATH_TO_MODEL,
-                    LEARNING_RATE,
-                    NUM_EPOCHS)
-from dataset import ShipDataset
-
-
-# Define a collate function for the training dataset
-def train_collate_fn(batch):
-    images, masks = zip(*batch)
-    transformed_images = []
-    transformed_masks = []
-    for idx in range(len(images)):
-        augmented = TRANSFORM_TRAIN(image=images[idx].numpy(),
-                                    mask=masks[idx].permute(1, 2, 0).numpy())
-        transformed_images.append(augmented['image'])
-        transformed_masks.append(augmented['mask'].permute(2, 0, 1))
-    return torch.stack(transformed_images), torch.stack(transformed_masks)
-
-
-# Define a collate function for the validation and test datasets
-def val_test_collate_fn(batch):
-    images, masks = zip(*batch)
-    transformed_images = []
-    transformed_masks = []
-    for idx in range(len(images)):
-        augmented = TRANSFORM_VAL_TEST(image=images[idx].numpy(),
-                                       mask=masks[idx].permute(1, 2, 0).numpy())
-        transformed_images.append(augmented['image'])
-        transformed_masks.append(augmented['mask'].permute(2, 0, 1))
-    return torch.stack(transformed_images), torch.stack(transformed_masks)
+from config import TRANSFORM_TRAIN, TRANSFORM_VAL_TEST, DEVICE, SAVED_MODEL_PATH, ROOT_DIR_TRAIN, BATCH_SIZE, \
+    LOAD_MODEL, PATH_TO_MODEL, LEARNING_RATE, NUM_EPOCHS, ROOT_DIR_VAL, ROOT_DIR_TEST
+from dataset import TikTokDataset
 
 
 def train_loop(model, criterion, optimizer, loader, scaler):
@@ -57,7 +22,7 @@ def train_loop(model, criterion, optimizer, loader, scaler):
             pred = model(img)
 
             # calculate loss and dice coeficient and append it to losses and metrics
-            Loss = criterion(pred, mask)
+            Loss = criterion(pred, mask.float())
 
             tp, fp, fn, tn = smp.metrics.get_stats(torch.sigmoid(pred) > 0.5, mask.to(torch.int64), mode='binary',
                                                    num_classes=1)
@@ -79,8 +44,9 @@ def train_loop(model, criterion, optimizer, loader, scaler):
         scaler.scale(Loss).backward()
         scaler.step(optimizer)
         scaler.update()
-    print(
-        f"train_loss: {sum(losses) / len(losses)}, iou_score: {sum(iou_scores) / len(iou_scores)}, f1_score: {sum(f1_scores) / len(f1_scores)}, f2_score: {sum(f2_scores) / len(f2_scores)}, accuracy: {sum(accuracys) / len(accuracys)}, recall:{sum(recalls) / len(recalls)}")
+    print(f"train_loss: {sum(losses) / len(losses)}, iou_score: {sum(iou_scores) / len(iou_scores)}, "
+          f"f1_score: {sum(f1_scores) / len(f1_scores)}, f2_score: {sum(f2_scores) / len(f2_scores)}, "
+          f"accuracy: {sum(accuracys) / len(accuracys)}, recall:{sum(recalls) / len(recalls)}")
 
 
 def val_loop(model, criterion, loader):
@@ -97,7 +63,7 @@ def val_loop(model, criterion, loader):
             pred = model(img)
 
             # calculate loss and dice coefficient and append it to losses and metrics
-            Loss = criterion(pred, mask)
+            Loss = criterion(pred, mask.float())
 
             tp, fp, fn, tn = smp.metrics.get_stats(torch.sigmoid(pred) > 0.5, mask.to(torch.int64), mode='binary',
                                                    num_classes=1)
@@ -114,8 +80,9 @@ def val_loop(model, criterion, loader):
             accuracys.append(accuracy)
             recalls.append(recall)
 
-        print(
-            f"val_loss: {sum(losses) / len(losses)}, iou_score: {sum(iou_scores) / len(iou_scores)}, f1_score: {sum(f1_scores) / len(f1_scores)}, f2_score: {sum(f2_scores) / len(f2_scores)}, accuracy: {sum(accuracys) / len(accuracys)}, recall:{sum(recalls) / len(recalls)}")
+        print(f"val_loss: {sum(losses) / len(losses)}, iou_score: {sum(iou_scores) / len(iou_scores)}, "
+              f"f1_score: {sum(f1_scores) / len(f1_scores)}, f2_score: {sum(f2_scores) / len(f2_scores)}, "
+              f"accuracy: {sum(accuracys) / len(accuracys)}, recall:{sum(recalls) / len(recalls)}")
 
 
 def test_loop(model, criterion, loader):
@@ -132,7 +99,7 @@ def test_loop(model, criterion, loader):
             pred = model(img)
 
             # calculate loss and dice coefficient and append it to losses and metrics
-            Loss = criterion(pred, mask)
+            Loss = criterion(pred, mask.float())
 
             tp, fp, fn, tn = smp.metrics.get_stats(torch.sigmoid(pred) > 0.5, mask.to(torch.int64), mode='binary',
                                                    num_classes=1)
@@ -148,8 +115,9 @@ def test_loop(model, criterion, loader):
             f2_scores.append(f2_score)
             accuracys.append(accuracy)
             recalls.append(recall)
-        print(
-            f"test_loss: {sum(losses) / len(losses)}, iou_score: {sum(iou_scores) / len(iou_scores)}, f1_score: {sum(f1_scores) / len(f1_scores)}, f2_score: {sum(f2_scores) / len(f2_scores)}, accuracy: {sum(accuracys) / len(accuracys)}, recall:{sum(recalls) / len(recalls)}")
+        print(f"test_loss: {sum(losses) / len(losses)}, iou_score: {sum(iou_scores) / len(iou_scores)}, "
+              f"f1_score: {sum(f1_scores) / len(f1_scores)}, f2_score: {sum(f2_scores) / len(f2_scores)}, "
+              f"accuracy: {sum(accuracys) / len(accuracys)}, recall:{sum(recalls) / len(recalls)}")
 
 
 def main():
@@ -167,27 +135,14 @@ def main():
     )
     model.to(DEVICE)
 
-    # Create the ShipDataset instance
-    ship_dataset = ShipDataset(root_dir=ROOT_DIR_TRAIN, csv_file=CSV_FILE)
-
-    # Determine the size of the train, val, and test datasets based on the specified ratio.
-    total_samples = len(ship_dataset)
-    train_ratio = 0.6
-    val_ratio = 0.2
-
-    train_size = int(train_ratio * total_samples)
-    val_size = int(val_ratio * total_samples)
-    test_size = total_samples - train_size - val_size
-
-    # Split the dataset into train, val, and test subsets using the torch.utils.data.random_split function.
-    train_dataset, remaining_dataset = torch.utils.data.random_split(ship_dataset,
-                                                                     [train_size, total_samples - train_size])
-    val_dataset, test_dataset = torch.utils.data.random_split(remaining_dataset, [val_size, test_size])
+    train_dataset = TikTokDataset(root_dir=ROOT_DIR_TRAIN, transform=TRANSFORM_TRAIN)
+    val_dataset = TikTokDataset(root_dir=ROOT_DIR_VAL, transform=TRANSFORM_VAL_TEST)
+    test_dataset = TikTokDataset(root_dir=ROOT_DIR_TEST, transform=TRANSFORM_VAL_TEST)
 
     # Create the DataLoader objects for each dataset to enable easy batching during training and evaluation.
-    train_loader = DataLoader(dataset=train_dataset, batch_size=BATCH_SIZE, shuffle=True, collate_fn=train_collate_fn)
-    val_loader = DataLoader(dataset=val_dataset, batch_size=BATCH_SIZE, shuffle=False, collate_fn=val_test_collate_fn)
-    test_loader = DataLoader(dataset=test_dataset, batch_size=BATCH_SIZE, shuffle=False, collate_fn=val_test_collate_fn)
+    train_loader = DataLoader(dataset=train_dataset, batch_size=BATCH_SIZE, shuffle=True)
+    val_loader = DataLoader(dataset=val_dataset, batch_size=BATCH_SIZE, shuffle=False)
+    test_loader = DataLoader(dataset=test_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
     # checking whether the model needs to be retrained
     if LOAD_MODEL:
@@ -196,6 +151,7 @@ def main():
             encoder_weights="imagenet",  # use `imagenet` pre-trained weights for encoder initialization
             in_channels=3,  # model input channels (1 for gray-scale images, 3 for RGB, etc.)
             classes=1,  # model output channels (number of classes in your dataset)
+            activation=None
         )
         model.to(DEVICE)
         model.load_state_dict(torch.load(PATH_TO_MODEL))
