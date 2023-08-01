@@ -3,6 +3,8 @@ import os
 import cv2
 import torch
 import numpy as np
+import albumentations as A
+from albumentations.pytorch import ToTensorV2
 
 
 class TikTokDataset(Dataset):
@@ -27,6 +29,10 @@ class TikTokDataset(Dataset):
         mask = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
 
         if self.transform:
+            if (image.shape[0] != mask.shape[0]) or (image.shape[1] != mask.shape[1]):
+                transform_mask = A.Compose([A.Resize(image.shape[0], image.shape[1]), ToTensorV2()])
+                mask = transform_mask(image=mask)['image']
+                mask = np.array(mask).squeeze(0)
             augmentations = self.transform(image=image, mask=mask)
             image = augmentations['image'].permute(1, 2, 0)
             mask = augmentations['mask']

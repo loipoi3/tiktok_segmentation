@@ -3,9 +3,10 @@ import os
 import segmentation_models_pytorch as smp
 import torch
 from segmentation_models_pytorch.losses import SoftBCEWithLogitsLoss
-from config import TRANSFORM_TRAIN, TRANSFORM_VAL_TEST, DEVICE, SAVED_MODEL_PATH, ROOT_DIR_TRAIN, BATCH_SIZE, \
-    LOAD_MODEL, PATH_TO_MODEL, LEARNING_RATE, NUM_EPOCHS, ROOT_DIR_VAL, ROOT_DIR_TEST
+from torch.utils.data import SubsetRandomSampler
+import random
 from dataset import TikTokDataset
+from config import *
 
 
 def train_loop(model, criterion, optimizer, loader, scaler):
@@ -139,10 +140,15 @@ def main():
     val_dataset = TikTokDataset(root_dir=ROOT_DIR_VAL, transform=TRANSFORM_VAL_TEST)
     test_dataset = TikTokDataset(root_dir=ROOT_DIR_TEST, transform=TRANSFORM_VAL_TEST)
 
-    # Create the DataLoader objects for each dataset to enable easy batching during training and evaluation.
-    train_loader = DataLoader(dataset=train_dataset, batch_size=BATCH_SIZE, shuffle=True)
-    val_loader = DataLoader(dataset=val_dataset, batch_size=BATCH_SIZE, shuffle=False)
-    test_loader = DataLoader(dataset=test_dataset, batch_size=BATCH_SIZE, shuffle=False)
+    # Get the total number of samples in each dataset
+    num_train_samples = len(train_dataset)
+    num_val_samples = len(val_dataset)
+    num_test_samples = len(test_dataset)
+
+    # Create a list of indices representing the entire dataset
+    all_indices_train = list(range(num_train_samples))
+    all_indices_val = list(range(num_val_samples))
+    all_indices_test = list(range(num_test_samples))
 
     # checking whether the model needs to be retrained
     if LOAD_MODEL:
@@ -166,6 +172,26 @@ def main():
     scaler = torch.cuda.amp.GradScaler()
 
     for epoch in range(NUM_EPOCHS):
+        # Randomly shuffle the list of indices
+        random.shuffle(all_indices_train)
+        random.shuffle(all_indices_val)
+        random.shuffle(all_indices_test)
+
+        # Split indices for train, validation, and test sets
+        train_indices = all_indices_train[:5000]
+        val_indices = all_indices_val[:1000]
+        test_indices = all_indices_test[:1000]
+
+        # Use SubsetRandomSampler to create DataLoader with fixed subsets for train, validation, and test
+        train_sampler = SubsetRandomSampler(train_indices)
+        val_sampler = SubsetRandomSampler(val_indices)
+        test_sampler = SubsetRandomSampler(test_indices)
+
+        # Create the DataLoader objects for each dataset to enable easy batching during training and evaluation.
+        train_loader = DataLoader(dataset=train_dataset, batch_size=BATCH_SIZE, sampler=train_sampler)
+        val_loader = DataLoader(dataset=val_dataset, batch_size=BATCH_SIZE, sampler=val_sampler)
+        test_loader = DataLoader(dataset=test_dataset, batch_size=BATCH_SIZE, sampler=test_sampler)
+
         print(f'Epoch: {epoch + 1}')
 
         train_loop(model, criterion, optimizer, train_loader, scaler)
@@ -178,4 +204,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-    

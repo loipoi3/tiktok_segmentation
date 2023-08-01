@@ -1,4 +1,4 @@
-from config import DEVICE, PATH_TO_MODEL
+from config import DEVICE, PATH_TO_MODEL, TRANSFORM_VAL_TEST
 import segmentation_models_pytorch as smp
 import torch
 from PIL import Image
@@ -16,18 +16,22 @@ model.load_state_dict(torch.load(PATH_TO_MODEL))
 model.to(DEVICE)
 model.eval()
 
-img = Image.open('./airbus-ship-detection/train_v2/00b872d8e.jpg')
-img = torch.tensor(np.array(img), dtype=torch.float32).permute(2, 0, 1).unsqueeze(0).to(DEVICE)
+img = np.array(Image.open('D:/projects/tiktok_segmentation/data/train/images/00001_0001.png')) / 255.0
+img = np.array(TRANSFORM_VAL_TEST(image=img)['image']).astype(np.float32)
+img = torch.tensor(img, dtype=torch.float32).unsqueeze(0).to(DEVICE)
 pred = torch.sigmoid(model(img))
 
-pred_mask = pred.cpu().detach().numpy()[0, 0]
-
 # Apply a threshold to the mask to convert it into binary values (0s and 1s)
+threshold = 0.5
 
-binary_mask = pred_mask.astype(np.uint8)
+binary_mask = (pred > threshold).squeeze().squeeze().cpu().detach().numpy().astype(np.uint8)
 
 # Overlay the binary mask on the original image to visualize the segmentation
 plt.figure(figsize=(10, 5))
+
+img = np.array(Image.open('D:/projects/tiktok_segmentation/data/train/images/00001_0001.png'))
+img = np.array(TRANSFORM_VAL_TEST(image=img)['image']).astype(np.float32)
+img = torch.tensor(img, dtype=torch.float32).unsqueeze(0).to(DEVICE)
 
 # Original Image
 plt.subplot(1, 2, 1)
