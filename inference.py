@@ -8,6 +8,7 @@ from config import PATH_TO_MODEL, DEVICE, TRANSFORM_VAL_TEST
 import io
 import base64
 
+
 app = Flask(__name__)
 
 # Load U-Net model and other necessary initializations here
@@ -17,7 +18,7 @@ model = smp.Unet(
     in_channels=3,  # model input channels (1 for gray-scale images, 3 for RGB, etc.)
     classes=1,  # model output channels (number of classes in your dataset)
     activation=None
-    )
+)
 model.load_state_dict(torch.load(PATH_TO_MODEL))
 model.to(DEVICE)
 model.eval()
@@ -87,6 +88,35 @@ def process_image():
 
     return jsonify({'prediction': result_base64})
 
+
+@app.route('/process_video', methods=['POST'])
+def process_video():
+    video = request.files['file']
+    video.save(video.filename)
+    cap = cv2.VideoCapture(video.filename)
+    frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    out = cv2.VideoWriter('output.mp4', fourcc, fps, (frame_width, frame_height))
+
+    while True:
+        # Read a frame from the input video
+        ret, image = cap.read()
+        if not ret:
+            break
+        image = Image.fromarray(image)
+        result = apply_mask(image)
+
+        out.write(np.array(Image.open(io.BytesIO(result))))
+
+    cap.release()
+    out.release()
+
+    with open('output.mp4', 'rb') as f:
+        result = f.read()
+
+    return result
 
 
 if __name__ == '__main__':
