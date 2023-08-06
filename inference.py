@@ -58,12 +58,18 @@ def apply_mask(image):
     # Set the alpha channel based on the resized predicted mask
     rgba_image[:, :, 3] = mask * 100
 
+    # Convert the numpy array to PIL Image
+    rgba_image = Image.fromarray(rgba_image)
+
+    # Convert the image to RGBA mode to ensure it has an alpha channel
+    image = image.convert('RGBA')
+
     # Superimpose the RGBA mask on the original image
-    output_image = Image.fromarray(rgba_image)
+    image_with_mask = Image.alpha_composite(image, rgba_image)
 
     # Convert the image to bytes and return as bytes object
     output_bytes = io.BytesIO()
-    output_image.save(output_bytes, format="PNG")
+    image_with_mask.save(output_bytes, format="PNG")
     output_bytes = output_bytes.getvalue()
 
     return output_bytes
