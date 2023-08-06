@@ -13,7 +13,7 @@ ROOT_DIR_TRAIN = './data/train'
 ROOT_DIR_VAL = './data/val'
 ROOT_DIR_TEST = './data/test'
 LOAD_MODEL = False
-PATH_TO_MODEL = './model.pth'
+PATH_TO_MODEL = './models/model30.pth'
 TRANSFORM_TRAIN = A.Compose([A.Resize(1088, 608),
                              A.HorizontalFlip(p=0.5),
                              A.Rotate(limit=90, border_mode=cv2.BORDER_CONSTANT, p=0.5),
