@@ -45,15 +45,13 @@ def apply_mask(image):
     # Resize the mask to match the shape of the resized image
     mask = cv2.resize(mask, (image_np.shape[1], image_np.shape[0]))
 
-    # Create a semi-transparent yellow mask
-    yellow_mask = np.zeros_like(image_np, dtype=np.uint8)
-    yellow_mask[:, :, 1] = 255  # Set green channel to 255 to get yellow
-
     # Create a new RGBA image with the same size as the original image
     rgba_image = np.zeros((image_np.shape[0], image_np.shape[1], 4), dtype=np.uint8)
 
-    # Copy the RGB channels from the original image to the new RGBA image
-    rgba_image[:, :, :3] = image_np
+    # Set the RGB channels to yellow (R=255, G=255, B=0)
+    rgba_image[:, :, 0] = 255  # R channel
+    rgba_image[:, :, 1] = 0  # G channel
+    rgba_image[:, :, 2] = 0  # B channel
 
     # Set the alpha channel based on the resized predicted mask
     rgba_image[:, :, 3] = mask * 100
