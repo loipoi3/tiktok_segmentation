@@ -59,6 +59,7 @@ docker-compose up --build
 Several results of the model:
 
 ![Example 1](image.png)
+
 [![Example 2](example2.mp4)](https://github.com/loipoi3/tiktok_segmentation/blob/main/example2.mp4)
 
 ## Results
