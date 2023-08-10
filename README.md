@@ -38,6 +38,10 @@ virtualenv tiktok
 ```bash
 name_of_the_new_env\Scripts\activate
 ```
+### Example:
+```bash
+tiktok\Scripts\activate
+```
 4. Write the following command and press Enter:
  ```bash
 pip install -r requirements.txt
