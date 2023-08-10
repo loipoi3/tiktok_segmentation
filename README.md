@@ -58,7 +58,7 @@ docker-compose up --build
 
 Several results of the model:
 ![Example 1](image.png)
-[![Example 1](video.mp4)](https://www.example.com/your-video.mp4)
+[![Example 1](video.mp4)](https://github.com/loipoi3/tiktok_segmentation/blob/main/example2.mp4)
 
 ## Results
 The performance of the UNet model can be evaluated using segmentation-specific metrics such as IoU or Dice coefficient. These metrics provide insights into how accurately the model segments objects in TikTok videos.
