@@ -22,11 +22,27 @@ The UNet model architecture used in this project is based on the original UNet a
 
 ## Usage
 If you want to train the model with other parameters:
-1. Go to folder with project and run this command:
+1. Go to folder with project and install virtualenv, write the following command and press Enter:
 ```bash
+pip install virtualenv
+```
+2. Next create a new environment, write the following command and press Enter:
+```bash
+virtualenv name_of_the_new_env
+```
+### Example:
+```bash
+virtualenv tiktok
+```
+3. Next activate the new environment, write the following command and press Enter:
+```bash
+name_of_the_new_env\Scripts\activate
+```
+4. Write the following command and press Enter:
+ ```bash
 pip install -r requirements.txt
 ```
-2. In order to train the model you can use with the default parameters, you can execute the following command:
+5. In order to train the model you can use with the default parameters, you can execute the following command:
 ```bash
 python train.py
 ```
