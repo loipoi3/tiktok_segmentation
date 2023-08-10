@@ -6,7 +6,8 @@ from segmentation_models_pytorch.losses import SoftBCEWithLogitsLoss
 from torch.utils.data import SubsetRandomSampler
 import random
 from dataset import TikTokDataset
-from config import *
+import argparse
+import config
 
 
 def train_loop(model, criterion, optimizer, loader, scaler):
@@ -15,8 +16,8 @@ def train_loop(model, criterion, optimizer, loader, scaler):
     losses, iou_scores, f1_scores, f2_scores, accuracys, recalls = [], [], [], [], [], []
     for idx, (img, mask) in enumerate(loader):
         # move data and targets to device(gpu or cpu)
-        img = img.float().to(DEVICE)
-        mask = mask.to(DEVICE)
+        img = img.float().to(config.DEVICE)
+        mask = mask.to(config.DEVICE)
 
         with torch.cuda.amp.autocast():
             # making prediction
@@ -32,7 +33,7 @@ def train_loop(model, criterion, optimizer, loader, scaler):
             f2_score = smp.metrics.fbeta_score(tp, fp, fn, tn, beta=2, reduction="micro")
             accuracy = smp.metrics.accuracy(tp, fp, fn, tn, reduction="macro")
             recall = smp.metrics.recall(tp, fp, fn, tn, reduction="micro-imagewise")
-
+            print(Loss.item(), iou_score, f1_score, f2_score, accuracy, recall)
             losses.append(Loss.item())
             iou_scores.append(iou_score)
             f1_scores.append(f1_score)
@@ -57,8 +58,8 @@ def val_loop(model, criterion, loader):
         losses, iou_scores, f1_scores, f2_scores, accuracys, recalls = [], [], [], [], [], []
         for idx, (img, mask) in enumerate(loader):
             # move data and targets to device(gpu or cpu)
-            img = img.float().to(DEVICE)
-            mask = mask.to(DEVICE)
+            img = img.float().to(config.DEVICE)
+            mask = mask.to(config.DEVICE)
 
             # making prediction
             pred = model(img)
@@ -93,8 +94,8 @@ def test_loop(model, criterion, loader):
         losses, iou_scores, f1_scores, f2_scores, accuracys, recalls = [], [], [], [], [], []
         for idx, (img, mask) in enumerate(loader):
             # move data and targets to device(gpu or cpu)
-            img = img.float().to(DEVICE)
-            mask = mask.to(DEVICE)
+            img = img.float().to(config.DEVICE)
+            mask = mask.to(config.DEVICE)
 
             # making prediction
             pred = model(img)
@@ -121,10 +122,18 @@ def test_loop(model, criterion, loader):
               f"accuracy: {sum(accuracys) / len(accuracys)}, recall:{sum(recalls) / len(recalls)}")
 
 
-def main():
+def main(args):
+    root_dir_train = args["root_dir_train"]
+    root_dir_val = args["root_dir_val"]
+    root_dir_test = args["root_dir_test"]
+    saved_model_path = args["save_model_path"]
+    num_epochs = args["epochs"]
+    learning_rate = args["lr"]
+    batch_size = args["batch"]
+
     # if directory model exists than create this
-    if not os.path.exists(SAVED_MODEL_PATH):
-        os.makedirs(SAVED_MODEL_PATH)
+    if not os.path.exists(saved_model_path):
+        os.makedirs(saved_model_path)
 
     # define model and move it to device(gpu or cpu)
     model = smp.Unet(
@@ -134,11 +143,11 @@ def main():
         classes=1,  # model output channels (number of classes in your dataset)
         activation=None
     )
-    model.to(DEVICE)
+    model.to(config.DEVICE)
 
-    train_dataset = TikTokDataset(root_dir=ROOT_DIR_TRAIN, transform=TRANSFORM_TRAIN)
-    val_dataset = TikTokDataset(root_dir=ROOT_DIR_VAL, transform=TRANSFORM_VAL_TEST)
-    test_dataset = TikTokDataset(root_dir=ROOT_DIR_TEST, transform=TRANSFORM_VAL_TEST)
+    train_dataset = TikTokDataset(root_dir=root_dir_train, transform=config.TRANSFORM_TRAIN)
+    val_dataset = TikTokDataset(root_dir=root_dir_val, transform=config.TRANSFORM_VAL_TEST)
+    test_dataset = TikTokDataset(root_dir=root_dir_test, transform=config.TRANSFORM_VAL_TEST)
 
     # Get the total number of samples in each dataset
     num_train_samples = len(train_dataset)
@@ -151,7 +160,7 @@ def main():
     all_indices_test = list(range(num_test_samples))
 
     # checking whether the model needs to be retrained
-    if LOAD_MODEL:
+    if config.LOAD_MODEL:
         model = smp.Unet(
             encoder_name="resnet34",  # choose encoder, e.g. mobilenet_v2 or efficientnet-b7
             encoder_weights="imagenet",  # use `imagenet` pre-trained weights for encoder initialization
@@ -159,19 +168,19 @@ def main():
             classes=1,  # model output channels (number of classes in your dataset)
             activation=None
         )
-        model.to(DEVICE)
-        model.load_state_dict(torch.load(PATH_TO_MODEL))
+        model.to(config.DEVICE)
+        model.load_state_dict(torch.load(config.PATH_TO_MODEL))
 
     # define loss function
     criterion = SoftBCEWithLogitsLoss()
 
     # Create optimizer only for trainable parameters
-    optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
     # define scaler
     scaler = torch.cuda.amp.GradScaler()
 
-    for epoch in range(NUM_EPOCHS):
+    for epoch in range(num_epochs):
         # Randomly shuffle the list of indices
         random.shuffle(all_indices_train)
         random.shuffle(all_indices_val)
@@ -188,9 +197,9 @@ def main():
         test_sampler = SubsetRandomSampler(test_indices)
 
         # Create the DataLoader objects for each dataset to enable easy batching during training and evaluation.
-        train_loader = DataLoader(dataset=train_dataset, batch_size=BATCH_SIZE, sampler=train_sampler)
-        val_loader = DataLoader(dataset=val_dataset, batch_size=BATCH_SIZE, sampler=val_sampler)
-        test_loader = DataLoader(dataset=test_dataset, batch_size=BATCH_SIZE, sampler=test_sampler)
+        train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, sampler=train_sampler)
+        val_loader = DataLoader(dataset=val_dataset, batch_size=batch_size, sampler=val_sampler)
+        test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, sampler=test_sampler)
 
         print(f'Epoch: {epoch + 1}')
 
@@ -199,8 +208,23 @@ def main():
         test_loop(model, criterion, test_loader)
 
         # save model
-        torch.save(model.state_dict(), SAVED_MODEL_PATH + f'model{epoch + 1}.pth')
+        torch.save(model.state_dict(), saved_model_path + f'model{epoch + 1}.pth')
 
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--root_dir_train", type=str, default=config.ROOT_DIR_TRAIN,
+                        help='Specify path to your images and masks of train dataset')
+    parser.add_argument("--root_dir_val", type=str, default=config.ROOT_DIR_VAL,
+                        help='Specify path to your images and masks of validation dataset')
+    parser.add_argument("--root_dir_test", type=str, default=config.ROOT_DIR_TEST,
+                        help='Specify path to your images and masks of test dataset')
+    parser.add_argument("--save_model_path", type=str, default=config.SAVED_MODEL_PATH,
+                        help='Specify path for save models, where models folder will be created')
+    parser.add_argument("--epochs", type=int, default=config.NUM_EPOCHS,
+                        help='Specify epoch for model training')
+    parser.add_argument("--lr", type=float, default=config.LEARNING_RATE, help='Specify learning rate')
+    parser.add_argument("--batch", type=int, default=config.BATCH_SIZE, help='Specify batch size')
+    args = parser.parse_args()
+    args = vars(args)
+    main(args)
