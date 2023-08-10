@@ -60,7 +60,10 @@ Several results of the model:
 
 ![Example 1](image.png)
 
-[![Example 2](example2.mp4)](https://github.com/loipoi3/tiktok_segmentation/blob/main/example2.mp4)
+<video controls width="500">
+     <source src="example2.mp4" type="video/mp4">
+     Your browser does not support video playback.
+</video>
 
 ## Results
 The performance of the UNet model can be evaluated using segmentation-specific metrics such as IoU or Dice coefficient. These metrics provide insights into how accurately the model segments objects in TikTok videos.
