@@ -57,6 +57,7 @@ docker-compose up --build
 3. And the last thing, open this link in your browser http://localhost:8501, that's all, now you can use the detector.
 
 Several results of the model:
+
 ![Example 1](image.png)
 [![Example 1](video.mp4)](https://github.com/loipoi3/tiktok_segmentation/blob/main/example2.mp4)
 
