@@ -33,7 +33,7 @@ def train_loop(model, criterion, optimizer, loader, scaler):
             f2_score = smp.metrics.fbeta_score(tp, fp, fn, tn, beta=2, reduction="micro")
             accuracy = smp.metrics.accuracy(tp, fp, fn, tn, reduction="macro")
             recall = smp.metrics.recall(tp, fp, fn, tn, reduction="micro-imagewise")
-            print(Loss.item(), iou_score, f1_score, f2_score, accuracy, recall)
+
             losses.append(Loss.item())
             iou_scores.append(iou_score)
             f1_scores.append(f1_score)
