@@ -26,7 +26,8 @@ If you want to train the model with other parameters:
 ```bash
 pip install virtualenv
 ```
-2. Next create a new environment, write the following command and press Enter:
+2. Run pre_data_analysis.ipynb.
+3. Next create a new environment, write the following command and press Enter:
 ```bash
 virtualenv name_of_the_new_env
 ```
@@ -34,7 +35,7 @@ virtualenv name_of_the_new_env
 ```bash
 virtualenv tiktok
 ```
-3. Next activate the new environment, write the following command and press Enter:
+4. Next activate the new environment, write the following command and press Enter:
 ```bash
 name_of_the_new_env\Scripts\activate
 ```
@@ -42,11 +43,11 @@ name_of_the_new_env\Scripts\activate
 ```bash
 tiktok\Scripts\activate
 ```
-4. Write the following command and press Enter:
+5. Write the following command and press Enter:
  ```bash
 pip install -r requirements.txt
 ```
-5. In order to train the model you can use with the default parameters, you can execute the following command:
+6. In order to train the model you can use with the default parameters, you can execute the following command:
 ```bash
 python train.py
 ```
