@@ -13,7 +13,7 @@ ROOT_DIR_TRAIN = './data/train'
 ROOT_DIR_VAL = './data/val'
 ROOT_DIR_TEST = './data/test'
 LOAD_MODEL = False
-PATH_TO_MODEL = './models/model30.pth'
+PATH_TO_MODEL = './model30.pth'
 TRANSFORM_TRAIN = A.Compose([A.ToRGB(),
                              A.Resize(1088, 608),
                              A.HorizontalFlip(p=0.5),
