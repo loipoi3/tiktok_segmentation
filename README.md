@@ -56,14 +56,9 @@ docker-compose up --build
 ```
 3. And the last thing, open this link in your browser http://localhost:8501, that's all, now you can use the detector.
 
-Several results of the model:
+Example of the result of the model:
 
 ![Example 1](image.png)
-
-<video controls width="500">
-     <source src="example2.mp4" type="video/mp4">
-     Your browser does not support video playback.
-</video>
 
 ## Results
 The performance of the UNet model can be evaluated using segmentation-specific metrics such as IoU or Dice coefficient. These metrics provide insights into how accurately the model segments objects in TikTok videos.
