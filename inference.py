@@ -82,13 +82,12 @@ def process_video():
         ret, image = cap.read()
         if not ret:
             break
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         image = Image.fromarray(image)
         result = apply_mask(image)
         result_image = Image.open(io.BytesIO(result))
         result_image.save(os.path.join(output_folder, f'frame_{frame_count:04d}.png'))
         frame_count += 1
-        if frame_count == 3:
-            break
     cap.release()
 
     # Convert processed frames to a video

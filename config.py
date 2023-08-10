@@ -14,7 +14,8 @@ ROOT_DIR_VAL = './data/val'
 ROOT_DIR_TEST = './data/test'
 LOAD_MODEL = False
 PATH_TO_MODEL = './models/model30.pth'
-TRANSFORM_TRAIN = A.Compose([A.Resize(1088, 608),
+TRANSFORM_TRAIN = A.Compose([A.ToRGB(),
+                             A.Resize(1088, 608),
                              A.HorizontalFlip(p=0.5),
                              A.Rotate(limit=90, border_mode=cv2.BORDER_CONSTANT, p=0.5),
                              A.RandomBrightnessContrast(p=0.5),
@@ -23,5 +24,6 @@ TRANSFORM_TRAIN = A.Compose([A.Resize(1088, 608),
                              A.OpticalDistortion(p=0.5),
                              A.MotionBlur(blur_limit=15, p=0.5),
                              ToTensorV2()])
-TRANSFORM_VAL_TEST = A.Compose([A.Resize(1088, 608),
+TRANSFORM_VAL_TEST = A.Compose([A.ToRGB(),
+                                A.Resize(1088, 608),
                                 ToTensorV2()])

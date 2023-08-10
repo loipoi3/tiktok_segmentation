@@ -69,4 +69,6 @@ if __name__ == '__main__':
                 predicted = predicted.content
 
                 # Display the processed video result
+                t.empty()
+                t.markdown('Your prediction:')
                 st.video(predicted)
